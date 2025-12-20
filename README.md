@@ -1,12 +1,12 @@
 🤖 AI Resume Analyzer with ATS & Job Matching
 
-An AI-powered Resume Analyzer that evaluates resume quality, calculates ATS scores, and compares resumes against job descriptions to identify missing skills.
+1.An AI-powered Resume Analyzer that evaluates resume quality, calculates ATS scores, and compares resumes against job descriptions to identify missing skills.
 
-This project simulates how modern Applicant Tracking Systems (ATS) work using AI and rule-based scoring.
+2.This project simulates how modern Applicant Tracking Systems (ATS) work using AI and rule-based scoring.
 
 
 
-🚀 Features
+🚀 Features:
 
 ✅ Resume Quality Analysis
 - Calculates ATS score (0–100)
@@ -31,7 +31,7 @@ This project simulates how modern Applicant Tracking Systems (ATS) work using AI
 - Provides personalized improvement suggestions
 
 
-🛠️ Tech Stack
+🛠️ Tech Stack:
 
 Frontend
 - HTML
@@ -61,7 +61,7 @@ AI_resume_analyzer/
 │ └── .gitignore
 
 
-⚙️ How It Works
+⚙️ How It Works:
 
 1. User uploads or pastes a resume
 2. User pastes a job description
@@ -74,18 +74,14 @@ AI_resume_analyzer/
 6. Results are displayed in a clean and user-friendly UI
 
 
-🔐 Environment Setup
+🔐 Environment Setup:
 
-Create a `.env` file inside the `Backend` folder:
-
-OPENROUTER_API_KEY=your_api_key_here
-
-
+> Create a `.env` file inside the `Backend` folder:
 > The `.env` file is ignored using `.gitignore` for security reasons.
 
----
 
-▶️ Run the Project Locally
+
+▶️ Run the Project Locally:
 
 Backend
 ```bash
