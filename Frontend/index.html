@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Analyzer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI Resume Analyzer</h1>
+            <p>Get instant insights and improvements for your resume</p>
+        </div>
+
+        <div class="upload-section" id="uploadSection">
+            <h3>Upload Your Resume</h3>
+            <p>Support for PDF, DOC, DOCX, and TXT files</p>
+            <input type="file" id="fileInput" class="file-input" accept=".pdf,.doc,.docx,.txt">
+            <button class="upload-button" onclick="document.getElementById('fileInput').click()">
+                📁 Choose File
+            </button>
+            <button class="upload-button" onclick="togglePasteArea()">
+                📝 Paste Text
+            </button>
+            
+            <textarea id="pasteArea" class="paste-area" placeholder="Or paste your resume text here..." style="display: none;"></textarea>
+        </div>
+
+        <!-- Job Description Section -->
+        <div class="upload-section">
+            <h3>Paste Job Description</h3>
+            <p>Used to calculate ATS job match percentage</p>
+
+            <textarea
+                id="jobDescription"
+                class="paste-area"
+                placeholder="Paste the job description here..."
+            ></textarea>
+        </div>
+
+
+        <button id="analyzeBtn" class="analyze-button" onclick="analyzeResume()" disabled>
+            🔍 Analyze Resume
+        </button>
+
+        <div id="loadingSection" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Analyzing your resume... Please wait</p>
+        </div>
+
+        <div id="resultsSection" class="results-section">
+            <div class="score-card">
+                <div class="score-circle" id="overallScore">--</div>
+                <h2>Overall Resume Score</h2>
+                <p id="scoreDescription">Upload a resume to get started</p>
+            </div>
+
+            <div class="analysis-card ats-breakdown">
+                <h3>ATS Score Breakdown</h3>
+
+                <div class="bar-item">
+                    <span>Skills Coverage</span>
+                    <div class="bar">
+                        <div id="skillsBar" class="bar-fill"></div>
+                    </div>
+                </div>
+
+                <div class="bar-item">
+                    <span>Experience</span>
+                    <div class="bar">
+                        <div id="experienceBar" class="bar-fill"></div>
+                    </div>
+                </div>
+
+                <div class="bar-item">
+                    <span>Formatting</span>
+                    <div class="bar">
+                        <div id="formatBar" class="bar-fill"></div>
+                    </div>
+                </div>
+
+                <div class="bar-item">
+                    <span>Keywords</span>
+                    <div class="bar">
+                        <div id="keywordBar" class="bar-fill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="analysis-card jd-card">
+                <h3>Job Description Match</h3>
+
+                <div class="jd-score-circle">
+                    <span id="jdMatchScore">--%</span>
+                </div>
+
+                <h4>Missing Skills</h4>
+                <div id="missingSkills" class="missing-skills"></div>
+            </div>
+
+
+
+            <div class="analysis-grid">
+                <div class="analysis-card">
+                    <h3><span class="icon">📝</span>Content Analysis</h3>
+                    <div id="contentAnalysis">
+                        <p>Word count: <span id="wordCount">--</span></p>
+                        <p>Sections found: <span id="sectionsFound">--</span></p>
+                        <p>Contact info: <span id="contactInfo">--</span></p>
+                    </div>
+                </div>
+
+                <div class="analysis-card">
+                    <h3><span class="icon">🎯</span>Skills Detected</h3>
+                    <ul id="skillsList" class="skill-list">
+                        <li>Upload a resume to see skills analysis</li>
+                    </ul>
+                </div>
+
+                <div class="analysis-card">
+                    <h3><span class="icon">📊</span>Format & Structure</h3>
+                    <div id="formatAnalysis">
+                        <p>Header quality: <span id="headerQuality">--</span></p>
+                        <p>Section organization: <span id="sectionOrg">--</span></p>
+                        <p>Bullet point usage: <span id="bulletPoints">--</span></p>
+                    </div>
+                </div>
+
+                <div class="analysis-card">
+                    <h3><span class="icon">🔍</span>Keyword Optimization</h3>
+                    <div id="keywordAnalysis">
+                        <p>Keywords found: <span id="keywordsFound">--</span></p>
+                        <div id="keywordsList"></div>
+                    </div>
+                </div>
+
+                <div class="analysis-card">
+                    <h3><span class="icon">⚠️</span>Areas for Improvement</h3>
+                    <ul id="improvementsList" class="improvement-list">
+                        <li>Upload a resume to see improvement suggestions</li>
+                    </ul>
+                </div>
+
+                <div class="analysis-card">
+                    <h3><span class="icon">✨</span>Experience Analysis</h3>
+                    <div id="experienceAnalysis">
+                        <p>Years of experience: <span id="yearsExp">--</span></p>
+                        <p>Job titles found: <span id="jobTitles">--</span></p>
+                        <p>Action verbs used: <span id="actionVerbs">--</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="suggestions-card">
+                <h3>💡 Personalized Suggestions</h3>
+                <div id="suggestions">
+                    Upload your resume to get personalized improvement suggestions!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
