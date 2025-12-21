@@ -73,7 +73,7 @@ async function analyzeResume() {
     document.getElementById("resultsSection").style.display = "none";
 
     try {
-        const response = await fetch("http://localhost:3000/analyze", {
+        const response = await fetch("https://ai-resume-analyzer-3pys.onrender.com/analyze", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ resumeText, jobDescription }),
