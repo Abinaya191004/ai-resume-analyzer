@@ -1,164 +1,128 @@
-document.addEventListener("DOMContentLoaded", function () {
-
 let resumeText = "";
 let jobDescription = "";
 
-/* -----------------------
-   FILE UPLOAD
-------------------------*/
-document.getElementById("fileInput").addEventListener("change", function (e) {
-    const file = e.target.files[0];
-    if (!file) return;
+const fileInput = document.getElementById("fileInput");
+const analyzeBtn = document.getElementById("analyzeBtn");
+const pasteArea = document.getElementById("pasteArea");
 
-    const reader = new FileReader();
-    reader.onload = function (event) {
-        resumeText = event.target.result;
-        document.getElementById("analyzeBtn").disabled = false;
-        document.querySelector(".upload-section p").textContent =
-            "File loaded: " + file.name;
-    };
-    reader.readAsText(file);
+fileInput.addEventListener("change", handleFileUpload);
+pasteArea.addEventListener("input", function () {
+  resumeText = this.value;
+  analyzeBtn.disabled = !resumeText.trim();
 });
 
-/* -----------------------
-   PASTE TEXT
-------------------------*/
-document.getElementById("pasteArea").addEventListener("input", function () {
-    resumeText = this.value;
-    document.getElementById("analyzeBtn").disabled = !resumeText.trim();
-});
-
-window.togglePasteArea = function () {
-    const pasteArea = document.getElementById("pasteArea");
-    pasteArea.style.display =
-        pasteArea.style.display === "none" ? "block" : "none";
-};
-
-/* -----------------------
-   JOB DESCRIPTION INPUT
-------------------------*/
-const jdInput = document.getElementById("jobDescription");
-
-if (jdInput) {
-    jdInput.addEventListener("input", function () {
-        jobDescription = this.value;
-    });
+function togglePasteArea() {
+  pasteArea.style.display =
+    pasteArea.style.display === "none" ? "block" : "none";
 }
 
-/* -----------------------
-   ANALYZE (AI CALL)
-------------------------*/
-window.analyzeResume = async function () {
+function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
 
-    if (!resumeText.trim()) {
-        alert("Please upload or paste resume text");
-        return;
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    resumeText = e.target.result;
+    analyzeBtn.disabled = false;
+  };
+  reader.readAsText(file);
+}
+
+async function analyzeResume() {
+  if (!resumeText.trim()) return;
+
+  document.getElementById("loadingSection").style.display = "block";
+  document.getElementById("resultsSection").style.display = "none";
+
+  try {
+    const response = await fetch(
+      "https://ai-resume-analyzer-3pys.onrender.com/analyze",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          resumeText,
+          jobDescription: "",
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Backend error");
     }
 
-    document.getElementById("loadingSection").style.display = "block";
-    document.getElementById("resultsSection").style.display = "none";
+    displayResults(data);
+  } catch (error) {
+    alert("AI temporarily unavailable. Please try again.");
+    console.error(error);
+  }
 
-    try {
+  document.getElementById("loadingSection").style.display = "none";
+  document.getElementById("resultsSection").style.display = "block";
+}
 
-        const response = await fetch("https://ai-resume-analyzer-3pys.onrender.com/analyze", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                resumeText,
-                jobDescription
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error("Backend error");
-        }
-
-        const data = await response.json();
-
-        displayResults(data);
-
-        document.getElementById("loadingSection").style.display = "none";
-        document.getElementById("resultsSection").style.display = "block";
-
-    } catch (error) {
-        document.getElementById("loadingSection").style.display = "none";
-        alert("AI analysis failed. Check backend.");
-        console.error(error);
-    }
-};
-
-/* -----------------------
-   DISPLAY RESULTS
-------------------------*/
 function displayResults(data) {
+  document.getElementById("overallScore").textContent =
+    data.overallScore || "--";
 
-    // Overall Score
-    document.getElementById("overallScore").textContent = data.overallScore;
+  document.getElementById("wordCount").textContent =
+    data.contentAnalysis?.wordCount || "--";
 
-    if (data.overallScore >= 85) {
-        document.getElementById("scoreDescription").textContent =
-            "Excellent ATS Optimized Resume";
-    } else if (data.overallScore >= 60) {
-        document.getElementById("scoreDescription").textContent =
-            "Good Resume - Needs Minor Improvements";
-    } else {
-        document.getElementById("scoreDescription").textContent =
-            "Resume Needs Optimization";
-    }
+  document.getElementById("sectionsFound").textContent =
+    data.contentAnalysis?.sectionsFound?.join(", ") || "--";
 
-    // Word count
-    document.getElementById("wordCount").textContent =
-        data.contentAnalysis?.wordCount || "--";
+  document.getElementById("contactInfo").textContent =
+    data.contentAnalysis?.contactInfo || "--";
 
-    document.getElementById("sectionsFound").textContent =
-        data.contentAnalysis?.sectionsFound?.join(", ") || "--";
+  document.getElementById("headerQuality").textContent =
+    data.formatStructure?.headerQuality || "--";
 
-    document.getElementById("contactInfo").textContent =
-        data.contentAnalysis?.contactInfo || "--";
+  document.getElementById("sectionOrg").textContent =
+    data.formatStructure?.sectionOrganization || "--";
 
-    // Skills
-    const skillsList = document.getElementById("skillsList");
-    skillsList.innerHTML = "";
+  document.getElementById("bulletPoints").textContent =
+    data.formatStructure?.bulletUsage || "--";
 
-    if (data.skillsDetected && data.skillsDetected.length > 0) {
-        data.skillsDetected.forEach(skill => {
-            skillsList.innerHTML += `<li>${skill}</li>`;
-        });
-    } else {
-        skillsList.innerHTML = "<li>No skills detected</li>";
-    }
+  document.getElementById("keywordsFound").textContent =
+    data.keywordOptimization?.keywordsFound || "--";
 
-    // Experience
-    document.getElementById("yearsExp").textContent =
-        data.experienceAnalysis?.yearsOfExperience || "--";
+  document.getElementById("yearsExp").textContent =
+    data.experienceAnalysis?.yearsOfExperience || "--";
 
-    document.getElementById("jobTitles").textContent =
-        data.experienceAnalysis?.jobTitles?.join(", ") || "--";
+  document.getElementById("jobTitles").textContent =
+    data.experienceAnalysis?.jobTitles?.join(", ") || "--";
 
-    document.getElementById("actionVerbs").textContent =
-        data.experienceAnalysis?.actionVerbsUsed || "--";
+  document.getElementById("actionVerbs").textContent =
+    data.experienceAnalysis?.actionVerbsUsed || "--";
 
-    // Improvements
-    const improvements = document.getElementById("improvementsList");
-    improvements.innerHTML = "";
+  const skillsList = document.getElementById("skillsList");
+  skillsList.innerHTML = "";
 
-    if (data.areasForImprovement) {
-        data.areasForImprovement.forEach(item => {
-            improvements.innerHTML += `<li>${item}</li>`;
-        });
-    }
+  (data.skillsDetected || []).forEach((skill) => {
+    const li = document.createElement("li");
+    li.textContent = skill;
+    skillsList.appendChild(li);
+  });
 
-    // Suggestions
-    const suggestions = document.getElementById("suggestions");
-    suggestions.innerHTML = "";
+  const improvementsList = document.getElementById("improvementsList");
+  improvementsList.innerHTML = "";
 
-    if (data.personalizedSuggestions) {
-        data.personalizedSuggestions.forEach(item => {
-            suggestions.innerHTML += `<p>• ${item}</p>`;
-        });
-    }
+  (data.areasForImprovement || []).forEach((item) => {
+    const li = document.createElement("li");
+    li.textContent = item;
+    improvementsList.appendChild(li);
+  });
+
+  const suggestions = document.getElementById("suggestions");
+  suggestions.innerHTML = "";
+
+  (data.personalizedSuggestions || []).forEach((item) => {
+    const p = document.createElement("p");
+    p.textContent = "• " + item;
+    suggestions.appendChild(p);
+  });
 }
-
-});
