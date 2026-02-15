@@ -36,6 +36,7 @@ app.post("/analyze", upload.single("resume"), async (req, res) => {
     if (resumeText.length > 8000) {
       resumeText = resumeText.substring(0, 8000);
     }
+    console.log("Resume Text:", resumeText);
 
     const prompt = `
 You are a professional ATS Resume Analyzer.

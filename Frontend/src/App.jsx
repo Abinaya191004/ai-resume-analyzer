@@ -20,14 +20,14 @@ function App() {
     setResults(null);
 
     try {
-      const formData = new FormData();
-      formData.append("resumeText", resumeText);
-      formData.append("jobDescription", jobDescription);
-
       const response = await axios.post(
         "https://ai-resume-analyzer-3pys.onrender.com/analyze",
-        formData
+        {
+          resumeText,
+          jobDescription
+        }
       );
+
 
       setResults(response.data);
     } catch (err) {
