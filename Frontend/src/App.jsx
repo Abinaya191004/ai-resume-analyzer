@@ -20,7 +20,7 @@ function App() {
     setResults(null);
 
     try {
-      const response = await axios.post('/api/analyze', {
+      const response = await axios.post('https://ai-resume-analyzer-3pys.onrender.com/analyze', {
         resumeText,
         jobDescription
       });
