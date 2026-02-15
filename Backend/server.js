@@ -163,7 +163,8 @@ const fs = require('fs');
 const distPath = path.join(__dirname, '../Frontend/dist');
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
-  app.get('*', (req, res) => {
+  // Fallback to index.html for SPA routing
+  app.use((req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }
