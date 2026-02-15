@@ -1,234 +1,358 @@
-
-
-let resumeText = "";
-
-/* FILE UPLOAD HANDLING */
-document.getElementById("fileInput").addEventListener("change", handleFileUpload);
-
-function handleFileUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function (e) {
-        resumeText = e.target.result;
-        document.getElementById("analyzeBtn").disabled = false;
-        document.querySelector(".upload-section p").textContent =
-            `File loaded: ${file.name}`;
-    };
-    reader.readAsText(file);
-}
-
-/* DRAG & DROP */
-const uploadSection = document.getElementById("uploadSection");
-
-uploadSection.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    uploadSection.classList.add("dragover");
-});
-
-uploadSection.addEventListener("dragleave", () => {
-    uploadSection.classList.remove("dragover");
-});
-
-uploadSection.addEventListener("drop", (e) => {
-    e.preventDefault();
-    uploadSection.classList.remove("dragover");
-    const file = e.dataTransfer.files[0];
-    if (file) handleDroppedFile(file);
-});
-
-function handleDroppedFile(file) {
-    const reader = new FileReader();
-    reader.onload = function (e) {
-        resumeText = e.target.result;
-        document.getElementById("analyzeBtn").disabled = false;
-        document.querySelector(".upload-section p").textContent =
-            `File loaded: ${file.name}`;
-    };
-    reader.readAsText(file);
-}
-
-/* PASTE TEXT */
-document.getElementById("pasteArea").addEventListener("input", function () {
-    resumeText = this.value;
-    document.getElementById("analyzeBtn").disabled = !resumeText.trim();
-});
-
-function togglePasteArea() {
-    const pasteArea = document.getElementById("pasteArea");
-    pasteArea.style.display =
-        pasteArea.style.display === "none" ? "block" : "none";
-    if (pasteArea.style.display === "block") pasteArea.focus();
-}
-
-/* ANALYZE RESUME */
-async function analyzeResume() {
-
-    const jobDescription = document.getElementById("jobDescription")?.value || "";
-
-    if (!resumeText.trim()) return;
-
-    document.getElementById("loadingSection").style.display = "block";
-    document.getElementById("resultsSection").style.display = "none";
-
-    try {
-        const response = await fetch("https://ai-resume-analyzer-3pys.onrender.com/analyze", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ resumeText, jobDescription }),
+        let resumeText = '';
+        
+        // File upload handling
+        document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+        
+        // Drag and drop functionality
+        const uploadSection = document.getElementById('uploadSection');
+        
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+        
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+        
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
         });
 
-        if (!response.ok) throw new Error("Backend error");
-
-        const data = await response.json();
-
-        document.getElementById("loadingSection").style.display = "none";
-        document.getElementById("resultsSection").style.display = "block";
-
-        displayAIResults(data);
-
-    } catch (error) {
-        document.getElementById("loadingSection").style.display = "none";
-        alert("AI temporarily unavailable. Please try again.");
-        console.error(error);
-    }
-}
-
-/* DISPLAY AI RESULTS */
-function displayAIResults(data) {
-
-    /* OVERALL SCORE */
-    const score = data.overallScore ?? 0;
-
-    document.getElementById("overallScore").textContent = score;
-
-    let label = "";
-    let color = "";
-
-    if (score >= 85) {
-        label = "Excellent ATS Optimized Resume";
-        color = "#22c55e"; // green
-    } else if (score >= 70) {
-        label = "Good Resume – Minor Improvements Needed";
-        color = "#4ade80";
-    } else if (score >= 50) {
-        label = "Average Resume – Needs Optimization";
-        color = "#facc15"; // yellow
-    } else {
-        label = "Poor ATS Score – Major Improvements Needed";
-        color = "#ef4444"; // red
-    }
-
-    document.getElementById("scoreDescription").textContent = label;
-    document.getElementById("overallScore").style.backgroundColor = color;
-
-    /* ATS SCORE BREAKDOWN */
-        document.getElementById("skillsBar").style.width =
-        (data.scoreBreakdown.skillsMatch / 25) * 100 + "%";
-
-        document.getElementById("experienceBar").style.width =
-        (data.scoreBreakdown.experience / 25) * 100 + "%";
-
-        document.getElementById("formatBar").style.width =
-        (data.scoreBreakdown.formatting / 25) * 100 + "%";
-
-        document.getElementById("keywordBar").style.width =
-        (data.scoreBreakdown.keywords / 25) * 100 + "%";
-
-
-    /* CONTENT ANALYSIS */
-    document.getElementById("wordCount").textContent =
-        data.contentAnalysis?.wordCount ?? "--";
-
-    document.getElementById("sectionsFound").textContent =
-        data.contentAnalysis?.sectionsFound?.join(", ") ?? "--";
-
-    document.getElementById("contactInfo").textContent =
-        data.contentAnalysis?.contactInfo ?? "--";
-
-    /* SKILLS */
-    const skillsList = document.getElementById("skillsList");
-    skillsList.innerHTML = "";
-
-    if (data.skillsDetected?.length) {
-        data.skillsDetected.forEach(skill => {
-            const li = document.createElement("li");
-            li.textContent = skill;
-            skillsList.appendChild(li);
+        // Paste area handling
+        document.getElementById('pasteArea').addEventListener('input', function() {
+            resumeText = this.value;
+            document.getElementById('analyzeBtn').disabled = !resumeText.trim();
         });
-    } else {
-        skillsList.innerHTML = "<li>No skills detected</li>";
-    }
 
-    /* FORMAT & STRUCTURE */
-    document.getElementById("headerQuality").textContent =
-        data.formatStructure?.headerQuality ?? "--";
+        function togglePasteArea() {
+            const pasteArea = document.getElementById('pasteArea');
+            pasteArea.style.display = pasteArea.style.display === 'none' ? 'block' : 'none';
+            if (pasteArea.style.display === 'block') {
+                pasteArea.focus();
+            }
+        }
 
-    document.getElementById("sectionOrg").textContent =
-        data.formatStructure?.sectionOrganization ?? "--";
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
 
-    document.getElementById("bulletPoints").textContent =
-        data.formatStructure?.bulletUsage ?? "--";
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                resumeText = e.target.result;
+                document.getElementById('analyzeBtn').disabled = false;
+                
+                // Show file name
+                const fileName = file.name;
+                document.querySelector('.upload-section p').textContent = `File loaded: ${fileName}`;
+            };
+            reader.readAsText(file);
+        }
 
-    /* KEYWORDS */
-    document.getElementById("keywordsFound").textContent =
-        data.keywordOptimization?.keywordsFound ?? "--";
+        function analyzeResume() {
+            if (!resumeText.trim()) return;
+            
+            // Show loading
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            
+            // Simulate analysis delay
+            setTimeout(() => {
+                performAnalysis();
+                document.getElementById('loadingSection').style.display = 'none';
+                document.getElementById('resultsSection').style.display = 'block';
+            }, 2000);
+        }
 
-    const keywordsList = document.getElementById("keywordsList");
-    keywordsList.innerHTML = "";
+        function performAnalysis() {
+            const analysis = analyzeResumeContent(resumeText);
+            displayResults(analysis);
+        }
 
-    data.keywordOptimization?.keywords?.forEach(k => {
-        const span = document.createElement("span");
-        span.className = "keyword-match";
-        span.textContent = k;
-        keywordsList.appendChild(span);
-    });
+        function analyzeResumeContent(text) {
+            const lowerText = text.toLowerCase();
+            
+            // Word count and basic metrics
+            const wordCount = text.split(/\s+/).length;
+            const lineCount = text.split('\n').length;
+            
+            // Skills detection
+            const technicalSkills = [
+                'javascript', 'python', 'java', 'react', 'node.js', 'sql', 'html', 'css',
+                'angular', 'vue', 'php', 'c++', 'c#', 'ruby', 'go', 'rust', 'swift',
+                'typescript', 'jquery', 'bootstrap', 'sass', 'less', 'webpack', 'git',
+                'docker', 'kubernetes', 'aws', 'azure', 'gcp', 'mongodb', 'postgresql',
+                'mysql', 'redis', 'elasticsearch', 'firebase', 'graphql', 'rest api',
+                'microservices', 'agile', 'scrum', 'jira', 'confluence', 'jenkins',
+                'ci/cd', 'devops', 'linux', 'unix', 'bash', 'powershell', 'tensorflow',
+                'pytorch', 'machine learning', 'ai', 'data science', 'analytics'
+            ];
+            
+            const softSkills = [
+                'leadership', 'communication', 'teamwork', 'problem solving',
+                'critical thinking', 'creativity', 'adaptability', 'time management',
+                'project management', 'collaboration', 'presentation', 'negotiation'
+            ];
+            
+            const foundTechSkills = technicalSkills.filter(skill => 
+                lowerText.includes(skill.toLowerCase())
+            );
+            
+            const foundSoftSkills = softSkills.filter(skill => 
+                lowerText.includes(skill.toLowerCase())
+            );
+            
+            // Contact information detection
+            const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+            const phoneRegex = /(\+\d{1,3}[- ]?)?\d{10}|\(\d{3}\)\s*\d{3}[- ]?\d{4}/;
+            const linkedinRegex = /linkedin\.com\/in\/[\w-]+/i;
+            
+            const hasEmail = emailRegex.test(text);
+            const hasPhone = phoneRegex.test(text);
+            const hasLinkedIn = linkedinRegex.test(text);
+            
+            // Section detection
+            const sections = [
+                'experience', 'education', 'skills', 'projects', 'certifications',
+                'summary', 'objective', 'achievements', 'awards', 'publications'
+            ];
+            
+            const foundSections = sections.filter(section => 
+                lowerText.includes(section)
+            );
+            
+            // Action verbs detection
+            const actionVerbs = [
+                'achieved', 'managed', 'led', 'developed', 'created', 'implemented',
+                'improved', 'increased', 'reduced', 'optimized', 'designed',
+                'coordinated', 'supervised', 'trained', 'mentored', 'collaborated'
+            ];
+            
+            const foundActionVerbs = actionVerbs.filter(verb => 
+                lowerText.includes(verb)
+            );
+            
+            // Years of experience estimation
+            const yearMatches = text.match(/\b(19|20)\d{2}\b/g) || [];
+            const years = yearMatches.map(y => parseInt(y)).filter(y => y >= 1990);
+            const estimatedYears = years.length > 1 ? 
+                Math.max(...years) - Math.min(...years) : 0;
+            
+            // Job titles detection
+            const commonTitles = [
+                'developer', 'engineer', 'manager', 'analyst', 'designer',
+                'consultant', 'specialist', 'coordinator', 'director', 'lead',
+                'senior', 'junior', 'intern', 'associate', 'principal'
+            ];
+            
+            const foundTitles = commonTitles.filter(title => 
+                lowerText.includes(title)
+            );
+            
+            // Bullet point detection
+            const bulletPoints = (text.match(/^[\s]*[•\-\*]/gm) || []).length;
+            
+            // Calculate overall score
+            let score = 0;
+            
+            // Content scoring
+            if (wordCount >= 200) score += 15;
+            else if (wordCount >= 100) score += 10;
+            else score += 5;
+            
+            // Contact info scoring
+            if (hasEmail) score += 10;
+            if (hasPhone) score += 10;
+            if (hasLinkedIn) score += 5;
+            
+            // Skills scoring
+            score += Math.min(foundTechSkills.length * 2, 20);
+            score += Math.min(foundSoftSkills.length * 1, 10);
+            
+            // Structure scoring
+            score += Math.min(foundSections.length * 3, 15);
+            score += Math.min(foundActionVerbs.length * 1, 10);
+            
+            // Format scoring
+            if (bulletPoints > 5) score += 5;
+            if (estimatedYears > 0) score += 5;
+            
+            const overallScore = Math.min(score, 100);
+            
+            return {
+                overallScore,
+                wordCount,
+                foundSections,
+                hasEmail,
+                hasPhone,
+                hasLinkedIn,
+                foundTechSkills,
+                foundSoftSkills,
+                foundActionVerbs,
+                estimatedYears,
+                foundTitles,
+                bulletPoints,
+                improvements: generateImprovements(overallScore, {
+                    wordCount, hasEmail, hasPhone, hasLinkedIn,
+                    foundTechSkills, foundSoftSkills, foundSections,
+                    bulletPoints, foundActionVerbs
+                })
+            };
+        }
 
-    /* EXPERIENCE */
-    document.getElementById("yearsExp").textContent =
-        data.experienceAnalysis?.yearsOfExperience ?? "--";
+        function generateImprovements(score, metrics) {
+            const improvements = [];
+            
+            if (!metrics.hasEmail) {
+                improvements.push('Add a professional email address');
+            }
+            if (!metrics.hasPhone) {
+                improvements.push('Include your phone number');
+            }
+            if (!metrics.hasLinkedIn) {
+                improvements.push('Add your LinkedIn profile URL');
+            }
+            if (metrics.wordCount < 200) {
+                improvements.push('Expand content - aim for 200-400 words');
+            }
+            if (metrics.foundTechSkills.length < 5) {
+                improvements.push('Add more relevant technical skills');
+            }
+            if (metrics.foundSoftSkills.length < 3) {
+                improvements.push('Include more soft skills');
+            }
+            if (!metrics.foundSections.includes('experience')) {
+                improvements.push('Add an experience/work history section');
+            }
+            if (!metrics.foundSections.includes('education')) {
+                improvements.push('Include your education background');
+            }
+            if (metrics.bulletPoints < 5) {
+                improvements.push('Use more bullet points for better readability');
+            }
+            if (metrics.foundActionVerbs.length < 5) {
+                improvements.push('Use more action verbs to describe achievements');
+            }
+            
+            return improvements;
+        }
 
-    document.getElementById("jobTitles").textContent =
-        data.experienceAnalysis?.jobTitles?.join(", ") ?? "--";
-
-    document.getElementById("actionVerbs").textContent =
-        data.experienceAnalysis?.actionVerbsUsed ?? "--";
-
-    /* IMPROVEMENTS */
-    const improvementsList = document.getElementById("improvementsList");
-    improvementsList.innerHTML = "";
-
-    data.areasForImprovement?.forEach(item => {
-        const li = document.createElement("li");
-        li.textContent = item;
-        improvementsList.appendChild(li);
-    });
-
-    /* SUGGESTIONS */
-    const suggestionsDiv = document.getElementById("suggestions");
-    suggestionsDiv.innerHTML = "";
-
-    data.personalizedSuggestions?.forEach(s => {
-        suggestionsDiv.innerHTML += `<p>• ${s}</p>`;
-    });
-
-    /* JOB DESCRIPTION MATCH */
-
-    document.getElementById("jdMatchScore").textContent =
-    data.jdMatch?.percentage + "%" || "0%";
-
-    const missingContainer = document.getElementById("missingSkills");
-    missingContainer.innerHTML = "";
-
-    if (data.jdMatch?.missingSkills?.length > 0) {
-    data.jdMatch.missingSkills.forEach(skill => {
-        const span = document.createElement("span");
-        span.textContent = skill;
-        missingContainer.appendChild(span);
-    });
-    } else {
-    missingContainer.textContent = "No missing skills 🎉";
-    }
-
-}
+        function displayResults(analysis) {
+            // Overall score
+            document.getElementById('overallScore').textContent = analysis.overallScore;
+            
+            let scoreDescription = '';
+            if (analysis.overallScore >= 80) {
+                scoreDescription = 'Excellent! Your resume is well-optimized.';
+            } else if (analysis.overallScore >= 60) {
+                scoreDescription = 'Good resume with room for improvement.';
+            } else if (analysis.overallScore >= 40) {
+                scoreDescription = 'Fair resume that needs some work.';
+            } else {
+                scoreDescription = 'Needs significant improvement.';
+            }
+            document.getElementById('scoreDescription').textContent = scoreDescription;
+            
+            // Content analysis
+            document.getElementById('wordCount').textContent = analysis.wordCount;
+            document.getElementById('sectionsFound').textContent = analysis.foundSections.join(', ') || 'None detected';
+            
+            const contactStatus = [];
+            if (analysis.hasEmail) contactStatus.push('Email ✓');
+            if (analysis.hasPhone) contactStatus.push('Phone ✓');
+            if (analysis.hasLinkedIn) contactStatus.push('LinkedIn ✓');
+            document.getElementById('contactInfo').innerHTML = contactStatus.join(', ') || '<span class="status-error">Missing contact info</span>';
+            
+            // Skills list
+            const skillsList = document.getElementById('skillsList');
+            skillsList.innerHTML = '';
+            
+            const allSkills = [...analysis.foundTechSkills, ...analysis.foundSoftSkills];
+            if (allSkills.length > 0) {
+                allSkills.forEach(skill => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span>${skill}</span>
+                        <div class="skill-level">
+                            <div class="skill-bar">
+                                <div class="skill-fill" style="width: ${Math.random() * 40 + 60}%"></div>
+                            </div>
+                        </div>
+                    `;
+                    skillsList.appendChild(li);
+                });
+            } else {
+                skillsList.innerHTML = '<li>No skills detected. Add relevant skills to improve your score.</li>';
+            }
+            
+            // Format analysis
+            document.getElementById('headerQuality').innerHTML = 
+                (analysis.hasEmail && analysis.hasPhone) ? 
+                '<span class="status-good">Good</span>' : 
+                '<span class="status-warning">Needs improvement</span>';
+            
+            document.getElementById('sectionOrg').innerHTML = 
+                analysis.foundSections.length >= 3 ? 
+                '<span class="status-good">Well organized</span>' : 
+                '<span class="status-warning">Could be better</span>';
+            
+            document.getElementById('bulletPoints').innerHTML = 
+                analysis.bulletPoints >= 5 ? 
+                '<span class="status-good">Good use of bullets</span>' : 
+                '<span class="status-warning">Use more bullet points</span>';
+            
+            // Keyword analysis
+            document.getElementById('keywordsFound').textContent = 
+                analysis.foundTechSkills.length + analysis.foundSoftSkills.length;
+            
+            const keywordsList = document.getElementById('keywordsList');
+            const allKeywords = [...analysis.foundTechSkills, ...analysis.foundSoftSkills];
+            keywordsList.innerHTML = allKeywords.map(keyword => 
+                `<span class="keyword-match">${keyword}</span>`
+            ).join('');
+            
+            // Experience analysis
+            document.getElementById('yearsExp').textContent = 
+                analysis.estimatedYears > 0 ? `~${analysis.estimatedYears} years` : 'Not specified';
+            document.getElementById('jobTitles').textContent = 
+                analysis.foundTitles.length || 'None detected';
+            document.getElementById('actionVerbs').textContent = 
+                analysis.foundActionVerbs.length;
+            
+            // Improvements list
+            const improvementsList = document.getElementById('improvementsList');
+            improvementsList.innerHTML = '';
+            
+            if (analysis.improvements.length > 0) {
+                analysis.improvements.forEach(improvement => {
+                    const li = document.createElement('li');
+                    li.textContent = improvement;
+                    improvementsList.appendChild(li);
+                });
+            } else {
+                improvementsList.innerHTML = '<li class="status-good">Great job! No major improvements needed.</li>';
+            }
+            
+            // Suggestions
+            const suggestions = document.getElementById('suggestions');
+            const suggestionTexts = [
+                'Consider quantifying your achievements with specific numbers and percentages.',
+                'Tailor your resume keywords to match the job description you\'re applying for.',
+                'Keep your resume to 1-2 pages for optimal readability.',
+                'Use consistent formatting and professional fonts throughout.',
+                'Include relevant certifications and continuous learning experiences.'
+            ];
+            
+            suggestions.innerHTML = suggestionTexts.map(text => 
+                `<p>• ${text}</p>`
+            ).join('');
+        }
