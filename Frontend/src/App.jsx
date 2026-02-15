@@ -11,7 +11,7 @@ function App() {
 
   const analyzeResume = async () => {
     if (!resumeText.trim()) {
-      setError("Please enter resume text");
+      setError("Please paste your resume text");
       return;
     }
 
@@ -20,19 +20,18 @@ function App() {
     setResults(null);
 
     try {
+      const formData = new FormData();
+      formData.append("resumeText", resumeText);
+      formData.append("jobDescription", jobDescription);
+
       const response = await axios.post(
         "https://ai-resume-analyzer-3pys.onrender.com/analyze",
-        {
-          resumeText,
-          jobDescription,
-        }
+        formData
       );
 
       setResults(response.data);
     } catch (err) {
-      setError(
-        err.response?.data?.error || "Server error. Please try again."
-      );
+      setError(err.response?.data?.error || "Analysis failed");
     } finally {
       setLoading(false);
     }
@@ -42,27 +41,25 @@ function App() {
     <div className="container">
       <div className="header">
         <h1>🤖 AI Resume Analyzer</h1>
-        <p>Get instant ATS score & improvement suggestions</p>
+        <p>Get instant AI-powered resume feedback</p>
       </div>
 
-      {/* Resume Input */}
       <div className="upload-section">
-        <h3>Paste Your Resume</h3>
+        <h3>Paste Resume</h3>
         <textarea
           value={resumeText}
           onChange={(e) => setResumeText(e.target.value)}
-          placeholder="Paste your resume text here..."
+          placeholder="Paste your resume here..."
           className="paste-area"
         />
       </div>
 
-      {/* Job Description */}
       <div className="upload-section">
         <h3>Paste Job Description (Optional)</h3>
         <textarea
           value={jobDescription}
           onChange={(e) => setJobDescription(e.target.value)}
-          placeholder="Paste job description to calculate match percentage..."
+          placeholder="Paste job description for match analysis..."
           className="paste-area"
         />
       </div>
@@ -77,26 +74,23 @@ function App() {
 
       {error && <div className="error">{error}</div>}
 
-      {/* RESULTS SECTION */}
       {results && (
         <div className="results-section">
-          
-          {/* Overall Score */}
           <div className="score-card">
             <div className="score-circle">
               {results.overallScore ?? "--"}
             </div>
-            <h2>Overall ATS Score</h2>
+            <h2>Overall Resume Score</h2>
+            <p>ATS Compatibility (0-100)</p>
           </div>
 
-          {/* Score Breakdown */}
           {results.scoreBreakdown && (
             <div className="analysis-card">
               <h3>ATS Score Breakdown</h3>
 
               {["skillsMatch", "experience", "formatting", "keywords"].map(
                 (key) => (
-                  <div className="bar-item" key={key}>
+                  <div key={key} className="bar-item">
                     <span>{key}</span>
                     <div className="bar">
                       <div
@@ -104,7 +98,7 @@ function App() {
                         style={{
                           width: `${
                             (results.scoreBreakdown[key] / 25) * 100
-                          }%`,
+                          }%`
                         }}
                       ></div>
                     </div>
@@ -115,11 +109,10 @@ function App() {
             </div>
           )}
 
-          {/* Skills Detected */}
-          {results.skillsDetected?.length > 0 && (
+          {results.skillsDetected && (
             <div className="analysis-card">
               <h3>Skills Detected</h3>
-              <ul className="skill-list">
+              <ul>
                 {results.skillsDetected.map((skill, i) => (
                   <li key={i}>{skill}</li>
                 ))}
@@ -127,7 +120,6 @@ function App() {
             </div>
           )}
 
-          {/* JD Match */}
           {results.jdMatch && (
             <div className="analysis-card">
               <h3>Job Match: {results.jdMatch.percentage}%</h3>
@@ -135,7 +127,7 @@ function App() {
               {results.jdMatch.missingSkills?.length > 0 && (
                 <>
                   <h4>Missing Skills</h4>
-                  <ul className="missing-skills">
+                  <ul>
                     {results.jdMatch.missingSkills.map((skill, i) => (
                       <li key={i}>{skill}</li>
                     ))}
@@ -145,30 +137,9 @@ function App() {
             </div>
           )}
 
-          {/* Experience */}
-          {results.experienceAnalysis && (
+          {results.areasForImprovement && (
             <div className="analysis-card">
-              <h3>Experience Analysis</h3>
-              <p>
-                Years of Experience:{" "}
-                {results.experienceAnalysis.yearsOfExperience || "Not found"}
-              </p>
-              <p>
-                Job Titles:{" "}
-                {results.experienceAnalysis.jobTitles?.join(", ") ||
-                  "Not detected"}
-              </p>
-              <p>
-                Action Verbs Used:{" "}
-                {results.experienceAnalysis.actionVerbsUsed || 0}
-              </p>
-            </div>
-          )}
-
-          {/* Improvements */}
-          {results.areasForImprovement?.length > 0 && (
-            <div className="analysis-card">
-              <h3>Areas For Improvement</h3>
+              <h3>Areas for Improvement</h3>
               <ul>
                 {results.areasForImprovement.map((item, i) => (
                   <li key={i}>{item}</li>
@@ -177,8 +148,7 @@ function App() {
             </div>
           )}
 
-          {/* Suggestions */}
-          {results.personalizedSuggestions?.length > 0 && (
+          {results.personalizedSuggestions && (
             <div className="analysis-card">
               <h3>Personalized Suggestions</h3>
               <ul>
