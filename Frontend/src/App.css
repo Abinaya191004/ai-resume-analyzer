@@ -42,6 +42,13 @@ body {
   font-size: 1.05rem;
 }
 
+.file-name {
+  margin-top: 10px;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+
 /* TEXTAREA SECTION */
 .upload-section {
   margin-bottom: 25px;
@@ -107,6 +114,11 @@ body {
 .results-section {
   margin-top: 30px;
 }
+
+.results-section.show {
+  display: block;
+}
+
 
 /* SCORE CARD */
 .score-card {

@@ -5,13 +5,30 @@ import "./App.css";
 function App() {
   const [resumeText, setResumeText] = useState("");
   const [jobDescription, setJobDescription] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [fileName, setFileName] = useState("");
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Handle PDF Upload
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+
+    if (file) {
+      setSelectedFile(file);
+      setFileName(file.name);
+      setResumeText(""); // Clear pasted text if file selected
+    } else {
+      setSelectedFile(null);
+      setFileName("");
+    }
+  };
+
+  // Analyze Resume
   const analyzeResume = async () => {
-    if (!resumeText.trim()) {
-      setError("Please paste your resume text");
+    if (!resumeText.trim() && !selectedFile) {
+      setError("Please paste resume text or upload a PDF file.");
       return;
     }
 
@@ -20,18 +37,32 @@ function App() {
     setResults(null);
 
     try {
+      const formData = new FormData();
+
+      if (selectedFile) {
+        formData.append("resumeFile", selectedFile);
+      } else {
+        formData.append("resumeText", resumeText);
+      }
+
+      formData.append("jobDescription", jobDescription);
+
       const response = await axios.post(
         "https://ai-resume-analyzer-3pys.onrender.com/analyze",
+        formData,
         {
-          resumeText,
-          jobDescription
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         }
       );
 
-
       setResults(response.data);
     } catch (err) {
-      setError(err.response?.data?.error || "Analysis failed");
+      console.error(err);
+      setError(
+        err.response?.data?.error || "Failed to analyze resume. Try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -41,29 +72,53 @@ function App() {
     <div className="container">
       <div className="header">
         <h1>🤖 AI Resume Analyzer</h1>
-        <p>Get instant AI-powered resume feedback</p>
+        <p>Upload or paste your resume to get AI-powered ATS feedback</p>
       </div>
 
+      {/* Upload Section */}
       <div className="upload-section">
-        <h3>Paste Resume</h3>
+        <h3>Upload Resume (PDF)</h3>
+
+        <input
+          type="file"
+          accept="application/pdf"
+          onChange={handleFileChange}
+        />
+
+        {fileName && (
+          <p className="file-name">
+            📄 Selected File: <strong>{fileName}</strong>
+          </p>
+        )}
+      </div>
+
+      {/* Paste Resume Section */}
+      <div className="upload-section">
+        <h3>Or Paste Resume Text</h3>
         <textarea
           value={resumeText}
-          onChange={(e) => setResumeText(e.target.value)}
-          placeholder="Paste your resume here..."
+          onChange={(e) => {
+            setResumeText(e.target.value);
+            setSelectedFile(null);
+            setFileName("");
+          }}
+          placeholder="Paste your resume text here..."
           className="paste-area"
         />
       </div>
 
+      {/* Job Description */}
       <div className="upload-section">
         <h3>Paste Job Description (Optional)</h3>
         <textarea
           value={jobDescription}
           onChange={(e) => setJobDescription(e.target.value)}
-          placeholder="Paste job description for match analysis..."
+          placeholder="Paste job description to calculate match percentage..."
           className="paste-area"
         />
       </div>
 
+      {/* Analyze Button */}
       <button
         onClick={analyzeResume}
         disabled={loading}
@@ -72,43 +127,31 @@ function App() {
         {loading ? "Analyzing..." : "🔍 Analyze Resume"}
       </button>
 
+      {/* Error */}
       {error && <div className="error">{error}</div>}
 
+      {/* Results */}
       {results && (
         <div className="results-section">
           <div className="score-card">
             <div className="score-circle">
-              {results.overallScore ?? "--"}
+              {results.overallScore || 0}
             </div>
             <h2>Overall Resume Score</h2>
-            <p>ATS Compatibility (0-100)</p>
           </div>
 
+          {/* Score Breakdown */}
           {results.scoreBreakdown && (
             <div className="analysis-card">
               <h3>ATS Score Breakdown</h3>
-
-              {["skillsMatch", "experience", "formatting", "keywords"].map(
-                (key) => (
-                  <div key={key} className="bar-item">
-                    <span>{key}</span>
-                    <div className="bar">
-                      <div
-                        className="bar-fill"
-                        style={{
-                          width: `${
-                            (results.scoreBreakdown[key] / 25) * 100
-                          }%`
-                        }}
-                      ></div>
-                    </div>
-                    <span>{results.scoreBreakdown[key]}</span>
-                  </div>
-                )
-              )}
+              <p>Skills Match: {results.scoreBreakdown.skillsMatch}/25</p>
+              <p>Experience: {results.scoreBreakdown.experience}/25</p>
+              <p>Formatting: {results.scoreBreakdown.formatting}/25</p>
+              <p>Keywords: {results.scoreBreakdown.keywords}/25</p>
             </div>
           )}
 
+          {/* Skills */}
           {results.skillsDetected && (
             <div className="analysis-card">
               <h3>Skills Detected</h3>
@@ -120,6 +163,7 @@ function App() {
             </div>
           )}
 
+          {/* JD Match */}
           {results.jdMatch && (
             <div className="analysis-card">
               <h3>Job Match: {results.jdMatch.percentage}%</h3>
@@ -137,9 +181,10 @@ function App() {
             </div>
           )}
 
+          {/* Improvements */}
           {results.areasForImprovement && (
             <div className="analysis-card">
-              <h3>Areas for Improvement</h3>
+              <h3>Areas For Improvement</h3>
               <ul>
                 {results.areasForImprovement.map((item, i) => (
                   <li key={i}>{item}</li>
@@ -148,9 +193,10 @@ function App() {
             </div>
           )}
 
+          {/* Suggestions */}
           {results.personalizedSuggestions && (
             <div className="analysis-card">
-              <h3>Personalized Suggestions</h3>
+              <h3>AI Suggestions</h3>
               <ul>
                 {results.personalizedSuggestions.map((item, i) => (
                   <li key={i}>{item}</li>

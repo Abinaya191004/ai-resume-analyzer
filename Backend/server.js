@@ -1,49 +1,61 @@
 const express = require("express");
 const cors = require("cors");
+const axios = require("axios");
 const multer = require("multer");
 const pdfParse = require("pdf-parse");
-const axios = require("axios");
 require("dotenv").config();
 
 const app = express();
-const upload = multer({ limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB limit
+const PORT = process.env.PORT || 3000;
 
+/* Middleware */
 app.use(cors());
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
+/* Multer Setup (Memory Storage) */
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB max
+});
+
+/* Test Route */
 app.get("/", (req, res) => {
   res.send("AI Resume Analyzer Backend Running");
 });
 
-app.post("/analyze", upload.single("resume"), async (req, res) => {
+/* Analyze Route */
+app.post("/analyze", upload.single("resumeFile"), async (req, res) => {
   try {
-    let resumeText = req.body.resumeText || "";
+    let resumeText = "";
     const jobDescription = req.body.jobDescription || "";
 
-    // If PDF uploaded
+    /* If PDF uploaded */
     if (req.file) {
       const pdfData = await pdfParse(req.file.buffer);
       resumeText = pdfData.text;
     }
 
+    /* If pasted text */
+    if (!resumeText && req.body.resumeText) {
+      resumeText = req.body.resumeText;
+    }
+
     if (!resumeText || resumeText.trim().length < 50) {
       return res.status(400).json({
-        error: "Resume content not readable. Upload proper PDF or paste text."
+        error: "Resume content not readable. Please upload proper PDF or paste text."
       });
     }
 
-    // 🚀 OPTIMIZATION: Trim long resumes to avoid token overflow
-    if (resumeText.length > 8000) {
-      resumeText = resumeText.substring(0, 8000);
+    /* Shorten very long resumes */
+    if (resumeText.length > 12000) {
+      resumeText = resumeText.substring(0, 12000);
     }
-    console.log("Resume Text:", resumeText);
 
     const prompt = `
 You are a professional ATS Resume Analyzer.
 
-Return ONLY valid JSON.
-
-Required JSON format:
+Analyze the following resume and return ONLY valid JSON.
 
 {
   "overallScore": number (0-100),
@@ -60,23 +72,14 @@ Required JSON format:
     "actionVerbsUsed": number
   },
   "areasForImprovement": array,
-  "personalizedSuggestions": array,
-  "jdMatch": {
-    "percentage": number,
-    "missingSkills": array
-  }
+  "personalizedSuggestions": array
 }
 
-Rules:
-- Do not add explanation.
-- Do not add markdown.
-- Do not add text outside JSON.
-
 Resume:
-${resumeText}
+"""${resumeText}"""
 
 Job Description:
-${jobDescription}
+"""${jobDescription}"""
 `;
 
     const aiResponse = await axios.post(
@@ -94,51 +97,30 @@ ${jobDescription}
       }
     );
 
-    let aiRaw = aiResponse.data.choices[0].message.content;
+    let aiText = aiResponse.data.choices[0].message.content;
 
-    // 🔥 Clean Markdown Fences
-    aiRaw = aiRaw.replace(/```json/g, "").replace(/```/g, "").trim();
+    /* Clean markdown if AI adds */
+    aiText = aiText.replace(/```json|```/g, "").trim();
 
-    const firstBrace = aiRaw.indexOf("{");
-    const lastBrace = aiRaw.lastIndexOf("}");
+    const firstBrace = aiText.indexOf("{");
+    const lastBrace = aiText.lastIndexOf("}");
 
-    if (firstBrace === -1 || lastBrace === -1) {
-      return res.status(500).json({ error: "AI returned invalid JSON" });
-    }
+    const jsonString = aiText.substring(firstBrace, lastBrace + 1);
 
-    const cleaned = aiRaw.substring(firstBrace, lastBrace + 1);
-
-    let parsed;
-
-    try {
-      parsed = JSON.parse(cleaned);
-    } catch (err) {
-      return res.status(500).json({ error: "Invalid AI response format" });
-    }
-
-    // 🔥 Safety fallback values
-    parsed.overallScore = parsed.overallScore || 0;
-    parsed.scoreBreakdown = parsed.scoreBreakdown || {
-      skillsMatch: 0,
-      experience: 0,
-      formatting: 0,
-      keywords: 0
-    };
-    parsed.skillsDetected = parsed.skillsDetected || [];
-    parsed.areasForImprovement = parsed.areasForImprovement || [];
-    parsed.personalizedSuggestions = parsed.personalizedSuggestions || [];
-    parsed.jdMatch = parsed.jdMatch || {
-      percentage: 0,
-      missingSkills: []
-    };
+    const parsed = JSON.parse(jsonString);
 
     res.json(parsed);
 
   } catch (error) {
-    console.error("AI ERROR:", error.response?.data || error.message);
-    res.status(500).json({ error: "AI analysis failed" });
+    console.error("AI Error:", error.response?.data || error.message);
+
+    res.status(500).json({
+      error: "AI analysis failed. Check API key or PDF format."
+    });
   }
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log("Server running on port", PORT));
+/* Start Server */
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
