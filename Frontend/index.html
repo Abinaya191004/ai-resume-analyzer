@@ -27,6 +27,19 @@
             <textarea id="pasteArea" class="paste-area" placeholder="Or paste your resume text here..." style="display: none;"></textarea>
         </div>
 
+        <!-- Job Description Section -->
+        <div class="upload-section">
+            <h3>Paste Job Description</h3>
+            <p>Used to calculate ATS job match percentage</p>
+
+            <textarea
+                id="jobDescription"
+                class="paste-area"
+                placeholder="Paste the job description here..."
+            ></textarea>
+        </div>
+
+
         <button id="analyzeBtn" class="analyze-button" onclick="analyzeResume()" disabled>
             🔍 Analyze Resume
         </button>
@@ -42,6 +55,51 @@
                 <h2>Overall Resume Score</h2>
                 <p id="scoreDescription">Upload a resume to get started</p>
             </div>
+
+            <div class="analysis-card ats-breakdown">
+                <h3>ATS Score Breakdown</h3>
+
+                <div class="bar-item">
+                    <span>Skills Coverage</span>
+                    <div class="bar">
+                        <div id="skillsBar" class="bar-fill"></div>
+                    </div>
+                </div>
+
+                <div class="bar-item">
+                    <span>Experience</span>
+                    <div class="bar">
+                        <div id="experienceBar" class="bar-fill"></div>
+                    </div>
+                </div>
+
+                <div class="bar-item">
+                    <span>Formatting</span>
+                    <div class="bar">
+                        <div id="formatBar" class="bar-fill"></div>
+                    </div>
+                </div>
+
+                <div class="bar-item">
+                    <span>Keywords</span>
+                    <div class="bar">
+                        <div id="keywordBar" class="bar-fill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="analysis-card jd-card">
+                <h3>Job Description Match</h3>
+
+                <div class="jd-score-circle">
+                    <span id="jdMatchScore">--%</span>
+                </div>
+
+                <h4>Missing Skills</h4>
+                <div id="missingSkills" class="missing-skills"></div>
+            </div>
+
+
 
             <div class="analysis-grid">
                 <div class="analysis-card">
@@ -104,5 +162,5 @@
     </div>
 
     <script src="script.js"></script>
-    </body>
+</body>
 </html>
