@@ -187,7 +187,11 @@ function App() {
               <h3>Areas For Improvement</h3>
               <ul>
                 {results.areasForImprovement.map((item, i) => (
-                  <li key={i}>{item}</li>
+                  <li key={i}>
+                      {typeof item === "string"
+                          ? item
+                          : `${item.issue || ""} ${item.impact ? " - " + item.impact : ""}`}
+                  </li>
                 ))}
               </ul>
             </div>
