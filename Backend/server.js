@@ -32,41 +32,43 @@ app.post("/analyze", async (req, res) => {
 
   /* 🔒 PREVENT TOKEN OVERFLOW */
   const MAX_CHARS = 8000;
-  const safeResume = resumeText.slice(0, MAX_CHARS);
-  const safeJD = jobDescription.slice(0, MAX_CHARS);
+  // LIMIT INPUT SIZE
+  const safeResume = resumeText.slice(0, 6000);
+  const safeJD = jobDescription ? jobDescription.slice(0, 4000) : "";
 
+  // SHORTER CLEAN PROMPT
   const prompt = `
-You are an ATS resume analyzer.
+  You are an ATS resume analyzer.
 
-Return ONLY valid JSON.
-No markdown.
-No explanations.
+  Return ONLY valid JSON.
 
-Required JSON format:
-{
-  "skillsDetected": array,
-  "jdSkills": array,
-  "contentAnalysis": {
-    "wordCount": number
-  },
-  "experienceAnalysis": {
-    "yearsOfExperience": string,
-    "jobTitles": array
-  },
-  "formatStructure": {
-    "headerQuality": string
-  },
-  "keywordOptimization": {
-    "keywordsFound": number
+  Required format:
+  {
+    "skillsDetected": [],
+    "jdSkills": [],
+    "experienceAnalysis": {
+      "yearsOfExperience": "",
+      "jobTitles": [],
+      "actionVerbsUsed": 0
+    },
+    "formatStructure": {
+      "headerQuality": "",
+      "sectionOrganization": "",
+      "bulletUsage": ""
+    },
+    "keywordOptimization": {
+      "keywordsFound": 0,
+      "keywords": []
+    }
   }
-}
 
-Resume:
-"""${safeResume}"""
+  RESUME:
+  ${safeResume}
 
-Job Description:
-"""${safeJD}"""
-`;
+  JOB DESCRIPTION:
+  ${safeJD}
+  `;
+
 
   try {
     const response = await axios.post(
