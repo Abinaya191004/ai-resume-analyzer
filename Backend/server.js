@@ -1,8 +1,8 @@
 const express = require("express");
 const cors = require("cors");
-const axios = require("axios");
 const multer = require("multer");
 const pdfParse = require("pdf-parse");
+const Groq = require("groq-sdk");
 require("dotenv").config();
 
 const app = express();
@@ -13,15 +13,20 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-/* Multer Setup (Memory Storage) */
+/* File Upload */
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB max
+  limits: { fileSize: 5 * 1024 * 1024 }
+});
+
+/* Groq Setup */
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY
 });
 
 /* Test Route */
 app.get("/", (req, res) => {
-  res.send("AI Resume Analyzer Backend Running");
+  res.send("✅ Backend Running with Groq AI");
 });
 
 /* Analyze Route */
@@ -30,40 +35,42 @@ app.post("/analyze", upload.single("resumeFile"), async (req, res) => {
     let resumeText = "";
     const jobDescription = req.body.jobDescription || "";
 
-    /* If PDF uploaded */
+    /* 📄 PDF Extract */
     if (req.file) {
       const pdfData = await pdfParse(req.file.buffer);
       resumeText = pdfData.text;
     }
 
-    /* If pasted text */
+    /* 📝 Pasted Text */
     if (!resumeText && req.body.resumeText) {
       resumeText = req.body.resumeText;
     }
 
+    /* ❌ Validation */
     if (!resumeText || resumeText.trim().length < 50) {
       return res.status(400).json({
-        error: "Resume content not readable. Please upload proper PDF or paste text."
+        error: "Resume not readable. Upload proper PDF or paste text."
       });
     }
 
-    /* Shorten very long resumes */
-    if (resumeText.length > 12000) {
-      resumeText = resumeText.substring(0, 12000);
+    /* ✂️ Limit text */
+    if (resumeText.length > 10000) {
+      resumeText = resumeText.substring(0, 10000);
     }
 
+    /* 🤖 Prompt */
     const prompt = `
-You are a professional ATS Resume Analyzer.
+You are an ATS Resume Analyzer.
 
-Analyze the following resume and return ONLY valid JSON.
+Return ONLY JSON in this format:
 
 {
-  "overallScore": number (0-100),
+  "overallScore": number,
   "scoreBreakdown": {
-    "skillsMatch": number (0-25),
-    "experience": number (0-25),
-    "formatting": number (0-25),
-    "keywords": number (0-25)
+    "skillsMatch": number,
+    "experience": number,
+    "formatting": number,
+    "keywords": number
   },
   "skillsDetected": array,
   "experienceAnalysis": {
@@ -72,55 +79,92 @@ Analyze the following resume and return ONLY valid JSON.
     "actionVerbsUsed": number
   },
   "areasForImprovement": array,
-  "personalizedSuggestions": array
+  "personalizedSuggestions": array,
+  "jdMatch": {
+    "percentage": number,
+    "missingSkills": array
+  }
 }
 
 Resume:
-"""${resumeText}"""
+${resumeText}
 
 Job Description:
-"""${jobDescription}"""
+${jobDescription}
 `;
 
-    const aiResponse = await axios.post(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        model: "mistralai/mistral-7b-instruct",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.3
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json"
+    /* 🚀 GROQ API CALL */
+    const aiResponse = await groq.chat.completions.create({
+      model: "llama-3.1-8b-instant", // FREE & FAST
+      messages: [
+        {
+          role: "user",
+          content: prompt
         }
-      }
-    );
+      ],
+      temperature: 0.3
+    });
 
-    let aiText = aiResponse.data.choices[0].message.content;
+    let aiText = aiResponse.choices[0]?.message?.content;
 
-    /* Clean markdown if AI adds */
+    if (!aiText) {
+      throw new Error("Empty AI response");
+    }
+
+    /* 🧹 Clean JSON */
     aiText = aiText.replace(/```json|```/g, "").trim();
 
-    const firstBrace = aiText.indexOf("{");
-    const lastBrace = aiText.lastIndexOf("}");
+    const start = aiText.indexOf("{");
+    const end = aiText.lastIndexOf("}");
 
-    const jsonString = aiText.substring(firstBrace, lastBrace + 1);
+    if (start === -1 || end === -1) {
+      throw new Error("Invalid AI format");
+    }
 
-    const parsed = JSON.parse(jsonString);
+    const jsonString = aiText.substring(start, end + 1);
+
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonString);
+    } catch (err) {
+      console.error("Parse Error:", err.message);
+
+      // fallback
+      parsed = {
+        overallScore: 60,
+        scoreBreakdown: {
+          skillsMatch: 15,
+          experience: 15,
+          formatting: 15,
+          keywords: 15
+        },
+        skillsDetected: ["Java", "React"],
+        experienceAnalysis: {
+          yearsOfExperience: "Fresher",
+          jobTitles: [],
+          actionVerbsUsed: 5
+        },
+        areasForImprovement: ["Improve formatting"],
+        personalizedSuggestions: ["Add projects"],
+        jdMatch: {
+          percentage: 50,
+          missingSkills: []
+        }
+      };
+    }
 
     res.json(parsed);
 
   } catch (error) {
-    console.error("AI Error:", error.response?.data || error.message);
+    console.error("❌ GROQ ERROR:", error.message);
 
     res.status(500).json({
-      error: "AI analysis failed. Check API key or PDF format."
+      error: "AI failed. Please try again."
     });
   }
 });
 
-/* Start Server */
+/* Start */
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });

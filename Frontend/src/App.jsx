@@ -47,8 +47,9 @@ function App() {
 
       formData.append("jobDescription", jobDescription);
 
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
       const response = await axios.post(
-        "https://ai-resume-analyzer-3pys.onrender.com/analyze",
+        `${apiUrl}/analyze`,
         formData,
         {
           headers: {
@@ -60,9 +61,14 @@ function App() {
       setResults(response.data);
     } catch (err) {
       console.error(err);
-      setError(
-        err.response?.data?.error || "Failed to analyze resume. Try again."
-      );
+      const errMsg = err.response?.data?.error;
+      const safeError =
+        typeof errMsg === "string"
+          ? errMsg
+          : errMsg?.message
+          ? errMsg.message
+          : JSON.stringify(errMsg || "Failed to analyze resume. Try again.");
+      setError(safeError);
     } finally {
       setLoading(false);
     }
@@ -75,39 +81,38 @@ function App() {
         <p>Upload or paste your resume to get AI-powered ATS feedback</p>
       </div>
 
-      {/* Upload Section */}
-      <div className="upload-section">
-        <h3>Upload Resume (PDF)</h3>
+      <div className="form-grid">
+        <div className="upload-section">
+          <h3>Upload Resume (PDF)</h3>
 
-        <input
-          type="file"
-          accept="application/pdf"
-          onChange={handleFileChange}
-        />
+          <input
+            type="file"
+            accept="application/pdf"
+            onChange={handleFileChange}
+          />
 
-        {fileName && (
-          <p className="file-name">
-            📄 Selected File: <strong>{fileName}</strong>
-          </p>
-        )}
+          {fileName && (
+            <p className="file-name">
+              📄 Selected File: <strong>{fileName}</strong>
+            </p>
+          )}
+        </div>
+
+        <div className="upload-section">
+          <h3>Or Paste Resume Text</h3>
+          <textarea
+            value={resumeText}
+            onChange={(e) => {
+              setResumeText(e.target.value);
+              setSelectedFile(null);
+              setFileName("");
+            }}
+            placeholder="Paste your resume text here..."
+            className="paste-area"
+          />
+        </div>
       </div>
 
-      {/* Paste Resume Section */}
-      <div className="upload-section">
-        <h3>Or Paste Resume Text</h3>
-        <textarea
-          value={resumeText}
-          onChange={(e) => {
-            setResumeText(e.target.value);
-            setSelectedFile(null);
-            setFileName("");
-          }}
-          placeholder="Paste your resume text here..."
-          className="paste-area"
-        />
-      </div>
-
-      {/* Job Description */}
       <div className="upload-section">
         <h3>Paste Job Description (Optional)</h3>
         <textarea
@@ -188,9 +193,14 @@ function App() {
               <ul>
                 {results.areasForImprovement.map((item, i) => (
                   <li key={i}>
-                      {typeof item === "string"
-                          ? item
-                          : `${item.issue || ""} ${item.impact ? " - " + item.impact : ""}`}
+                    {typeof item === "string" ? (
+                      item
+                    ) : (
+                      <>
+                        {item.issue && <strong>{item.issue}</strong>}
+                        {item.impact && <p>{item.impact}</p>}
+                      </>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -203,7 +213,17 @@ function App() {
               <h3>AI Suggestions</h3>
               <ul>
                 {results.personalizedSuggestions.map((item, i) => (
-                  <li key={i}>{item}</li>
+                  <li key={i}>
+                    {typeof item === "string" ? (
+                      item
+                    ) : (
+                      <>
+                        {item.suggestion && <strong>{item.suggestion}</strong>}
+                        {item.example && <p>Example: {item.example}</p>}
+                        {item.rationale && <p>{item.rationale}</p>}
+                      </>
+                    )}
+                  </li>
                 ))}
               </ul>
             </div>
