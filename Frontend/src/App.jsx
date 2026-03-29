@@ -143,6 +143,13 @@ function App() {
               {results.overallScore || 0}
             </div>
             <h2>Overall Resume Score</h2>
+            <h3>Breakdown:</h3>
+              <div className="breakdown">
+                <p>Skills Match: {results?.scoreBreakdown?.skillsMatch}/25</p>
+                <p>Experience: {results?.scoreBreakdown?.experience}/25</p>
+                <p>Formatting: {results?.scoreBreakdown?.formatting}/25</p>
+                <p>Keywords: {results?.scoreBreakdown?.keywords}/25</p>
+              </div>
           </div>
 
           {/* Score Breakdown */}

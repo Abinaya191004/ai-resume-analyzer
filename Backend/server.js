@@ -8,92 +8,110 @@ require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-/* Middleware */
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-/* File Upload */
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }
 });
 
-/* Groq Setup */
+
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
 });
 
-/* Test Route */
+
 app.get("/", (req, res) => {
   res.send("✅ Backend Running with Groq AI");
 });
 
-/* Analyze Route */
+
 app.post("/analyze", upload.single("resumeFile"), async (req, res) => {
   try {
     let resumeText = "";
-    const jobDescription = req.body.jobDescription || "";
+    const jobDescription = req.body.jobDescription;
 
-    /* 📄 PDF Extract */
+    if (!jobDescription || jobDescription.trim().length < 20) {
+      return res.status(400).json({
+        error: "Please provide job description for accurate ATS score"
+      });
+    }
+
+    
     if (req.file) {
       const pdfData = await pdfParse(req.file.buffer);
       resumeText = pdfData.text;
     }
 
-    /* 📝 Pasted Text */
+    
     if (!resumeText && req.body.resumeText) {
       resumeText = req.body.resumeText;
     }
 
-    /* ❌ Validation */
+    
     if (!resumeText || resumeText.trim().length < 50) {
       return res.status(400).json({
         error: "Resume not readable. Upload proper PDF or paste text."
       });
     }
 
-    /* ✂️ Limit text */
+    
     if (resumeText.length > 10000) {
       resumeText = resumeText.substring(0, 10000);
     }
 
-    /* 🤖 Prompt */
+    let penalty = 0;
+
+    const lowerText = resumeText.toLowerCase();
+
+    if (!lowerText.includes("project")) penalty += 10;
+    if (!lowerText.includes("experience")) penalty += 10;
+    if (resumeText.length < 1000) penalty += 10;
+
     const prompt = `
-You are an ATS Resume Analyzer.
+  You are a strict ATS Resume Evaluator.
 
-Return ONLY JSON in this format:
+  IMPORTANT RULES:
+  - DO NOT give default high scores.
+  - Scores must vary realistically (0–100).
+  - Penalize missing skills, poor formatting, and lack of experience.
+  - If resume is weak → score below 60.
+  - If average → 60–75.
+  - If strong → 75–90.
+  - Only exceptional → above 90.
 
-{
-  "overallScore": number,
-  "scoreBreakdown": {
-    "skillsMatch": number,
-    "experience": number,
-    "formatting": number,
-    "keywords": number
-  },
-  "skillsDetected": array,
-  "experienceAnalysis": {
-    "yearsOfExperience": string,
-    "jobTitles": array,
-    "actionVerbsUsed": number
-  },
-  "areasForImprovement": array,
-  "personalizedSuggestions": array,
-  "jdMatch": {
-    "percentage": number,
-    "missingSkills": array
+  SCORING LOGIC:
+  - Skills Match (0–25): based on match with job description
+  - Experience (0–25): internships/projects quality
+  - Formatting (0–25): structure, clarity
+  - Keywords (0–25): ATS keywords present
+
+  Return ONLY JSON:
+
+  {
+    "overallScore": number,
+    "scoreBreakdown": {
+      "skillsMatch": number,
+      "experience": number,
+      "formatting": number,
+      "keywords": number
+    },
+    "skillsDetected": array,
+    "areasForImprovement": array,
+    "personalizedSuggestions": array
   }
-}
 
-Resume:
-${resumeText}
+  Resume:
+  ${resumeText}
 
-Job Description:
-${jobDescription}
+  Job Description:
+  ${jobDescription || "Not provided"}
 `;
 
-    /* 🚀 GROQ API CALL */
+    
     const aiResponse = await groq.chat.completions.create({
       model: "llama-3.1-8b-instant", // FREE & FAST
       messages: [
@@ -111,7 +129,7 @@ ${jobDescription}
       throw new Error("Empty AI response");
     }
 
-    /* 🧹 Clean JSON */
+    
     aiText = aiText.replace(/```json|```/g, "").trim();
 
     const start = aiText.indexOf("{");
@@ -126,10 +144,15 @@ ${jobDescription}
     let parsed;
     try {
       parsed = JSON.parse(jsonString);
+      // Apply penalty
+      parsed.overallScore = Math.max(0, parsed.overallScore - penalty);
+      if (parsed.overallScore > 90) {
+        parsed.overallScore = Math.floor(Math.random() * 10) + 80;
+      }
     } catch (err) {
       console.error("Parse Error:", err.message);
 
-      // fallback
+      
       parsed = {
         overallScore: 60,
         scoreBreakdown: {
@@ -164,7 +187,7 @@ ${jobDescription}
   }
 });
 
-/* Start */
+
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
