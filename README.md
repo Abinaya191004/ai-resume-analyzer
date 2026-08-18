@@ -1,96 +1,251 @@
-🤖 AI Resume Analyzer with ATS & Job Matching
+# 🤖 AI Resume Analyzer with ATS & Job Matching
 
-1.An AI-powered Resume Analyzer that evaluates resume quality, calculates ATS scores, and compares resumes against job descriptions to identify missing skills.
+An AI-powered Resume Analyzer that evaluates resume quality, generates an **ATS score**, analyzes skills and experience, and compares a resume with a **Job Description** to identify missing skills and improvement areas.
 
-2.This project simulates how modern Applicant Tracking Systems (ATS) work using AI and rule-based scoring.
+The project combines **AI-powered analysis with structured ATS evaluation** to simulate how modern Applicant Tracking Systems can evaluate resumes.
 
+## 🚀 Features
 
+### 📄 Resume Analysis
 
-🚀 Features:
+* Upload a PDF resume or provide resume text
+* Extracts resume content automatically
+* Generates an ATS score from **0–100**
+* Provides detailed score breakdown:
 
-✅ Resume Quality Analysis
-- Calculates ATS score (0–100)
-- Provides ATS score breakdown:
-  - Skills Coverage
-  - Experience
-  - Formatting
-  - Keywords
-- Detects:
-  - Technical skills
-  - Resume sections
-  - Experience and action verbs
+  * Skills Match
+  * Experience
+  * Formatting
+  * Keywords
 
-✅ Job Description Matching
-- Compares Resume vs Job Description
-- Calculates Job Match Percentage
-- Lists Missing Skills required for the job
-- Helps users understand skill gaps clearly
+### 🧠 AI-Powered Analysis
 
-✅ AI-Powered Insights
-- Uses AI to extract skills from resume and job description
-- Provides personalized improvement suggestions
+* Detects technical skills
+* Identifies job titles and experience
+* Analyzes action verbs
+* Identifies areas for improvement
+* Generates personalized resume suggestions
 
+### 💼 Job Description Matching
 
-🛠️ Tech Stack:
+* Compare resume against a job description
+* Identify relevant skills
+* Detect missing skills
+* Analyze alignment between resume and job requirements
+* Helps users understand their skill gaps
 
-Frontend
-- HTML
-- CSS
-- JavaScript
+### 📊 ATS Insights
 
-Backend
-- Node.js
-- Express.js
+* Overall Resume Score
+* ATS Score Breakdown
+* Skills Detected
+* Areas for Improvement
+* AI-generated Suggestions
 
-AI Integration
-- OpenRouter AI (LLM-based analysis)
+## 🛠️ Tech Stack
 
+### Frontend
 
-📂 Project Structure:
+* React.js
+* Vite
+* JavaScript
+* CSS
+* Axios
 
+### Backend
+
+* Node.js
+* Express.js
+* Multer
+* PDF Parse
+* Axios
+
+### AI Integration
+
+* Groq API
+* Large Language Model (LLM) based resume analysis
+
+### Deployment
+
+* Netlify – Frontend
+* Render – Backend
+
+## ⚙️ How It Works
+
+```text
+Upload Resume / Paste Resume
+          ↓
+   Extract Resume Text
+          ↓
+Enter Job Description
+          ↓
+   Send Data to Backend
+          ↓
+     Groq AI Analysis
+          ↓
+  ATS & Job Match Analysis
+          ↓
+      Display Results
+```
+
+## 📊 Analysis Output
+
+The application provides:
+
+```text
+Overall Resume Score
+        ↓
+ATS Score Breakdown
+├── Skills Match
+├── Experience
+├── Formatting
+└── Keywords
+
+Skills Detected
+        ↓
+Areas for Improvement
+        ↓
+AI-Powered Suggestions
+```
+
+## 📂 Project Structure
+
+```text
 AI_resume_analyzer/
+│
 ├── Frontend/
-│ ├── index.html
-│ ├── style.css
-│ └── script.js
+│   ├── src/
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   │   └── ...
+│   ├── public/
+│   ├── package.json
+│   └── vite.config.js
+│
 ├── Backend/
-│ ├── node_modules/
-│ ├── server.js
-│ ├── package.json
-│ ├── package-lock.json
-│ └── .gitignore
+│   ├── server.js
+│   ├── package.json
+│   ├── package-lock.json
+│   └── .gitignore
+│
+└── README.md
+```
 
+## 🔐 Environment Variables
 
-⚙️ How It Works:
+Create a `.env` file inside the **Backend** folder.
 
-1. User uploads or pastes a resume
-2. User pastes a job description
-3. Backend sends both inputs to AI for analysis
-4. AI extracts resume skills and job requirements
-5. Backend calculates:
-   - ATS Resume Score
-   - Job Description Match Percentage
-   - Missing skills
-6. Results are displayed in a clean and user-friendly UI
+```env
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=your_model_name
+AI_PROVIDER=groq
+```
 
+> ⚠️ Never upload your `.env` file or API key to GitHub.
 
-🔐 Environment Setup:
+Make sure `.env` is included in `.gitignore`:
 
-> Create a `.env` file inside the `Backend` folder:
-> The `.env` file is ignored using `.gitignore` for security reasons.
+```text
+.env
+node_modules/
+```
 
+For the deployed backend, configure these variables in the **Render Environment Variables** section.
 
+## ▶️ Run Locally
 
-▶️ Run the Project Locally:
+### 1. Clone the Repository
 
-Backend
+```bash
+git clone YOUR_GITHUB_REPOSITORY_URL
+cd AI_resume_analyzer
+```
+
+### 2. Start Backend
+
 ```bash
 cd Backend
 npm install
 node server.js
 ```
 
-Frontend
-Open Frontend/index.html using Live Server in VS Code
+The backend will run on:
+
+```text
+http://localhost:3000
+```
+
+### 3. Start Frontend
+
+Open another terminal:
+
+```bash
+cd Frontend
+npm install
+npm run dev
+```
+
+Vite will provide the local frontend URL, usually:
+
+```text
+http://localhost:5173
+```
+
+## 🌐 Deployment
+
+### Frontend
+
+The React frontend can be deployed using **Netlify**.
+
+### Backend
+
+The Node.js/Express backend can be deployed using **Render**.
+
+Production architecture:
+
+```text
+User
+ ↓
+Netlify
+(React Frontend)
+ ↓
+Render
+(Node.js + Express Backend)
+ ↓
+Groq API
+ ↓
+AI Analysis
+ ↓
+Results
+```
+
+## 🔒 Security
+
+* API keys are stored using environment variables
+* `.env` is excluded from GitHub
+* API requests are handled through the backend
+* The Groq API key is not exposed directly in the frontend
+
+## 🎯 Project Objective
+
+The main objective of this project is to build an intelligent resume analysis system that helps job seekers understand how well their resumes align with ATS requirements and specific job descriptions.
+
+It provides actionable feedback so users can improve their resumes and increase their chances of passing initial ATS screening.
+
+## 🚀 Future Improvements
+
+* Resume keyword highlighting
+* Resume section completeness detection
+* More detailed job matching
+* Resume improvement recommendations
+* Downloadable ATS analysis report
+* Resume comparison with multiple job descriptions
+* Advanced rule-based ATS scoring
+* Authentication and user history
+* Dashboard for tracking resume performance
+
+---
+
+### ⭐ If you find this project useful, consider giving the repository a star!
 
 
